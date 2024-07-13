@@ -38,7 +38,7 @@ func CheckExistencesShedulerDB() (bool, string) {
 func ConnectDB() error {
 
 	install, dbFile := CheckExistencesShedulerDB()
-
+	dbFile = "../scheduler.db"
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
 		log.Printf("Error connect to DB, %v", err)

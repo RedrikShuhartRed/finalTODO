@@ -22,7 +22,10 @@ func getURL(path string) string {
 		}
 	}
 	path = strings.TrimPrefix(strings.ReplaceAll(path, `\`, `/`), `../web/`)
-	return fmt.Sprintf("http://localhost:%d/%s", port, path)
+	if path == "api/task" {
+		return fmt.Sprintf("http://localhost:%d/%s", port, path)
+	}
+	return fmt.Sprintf("http://localhost:%d/static/%s", port, path)
 }
 
 func getBody(path string) ([]byte, error) {

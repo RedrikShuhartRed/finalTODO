@@ -41,6 +41,13 @@ func LastDayInMonths(days []int, initialDate time.Time) int {
 }
 
 func NextDate(now time.Time, date string, repeat string) (string, error) {
+
+	date, err := CheckTaskDate(date, repeat)
+	if err != nil {
+		log.Printf("error check task date, %v", err)
+		return "", err
+	}
+
 	initialDate, err := time.Parse(dateTimeFormat, date)
 
 	if err != nil {
@@ -48,13 +55,11 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		return "", errInvalidDate
 	}
 
-	if repeat == "" {
-		log.Printf("Error repeat rule is empty, %v:", errRepeatEmpty)
-		return "", errRepeatEmpty
-	}
 	repeatSlice := strings.Split(repeat, " ")
 
 	switch repeatSlice[0] {
+	case "":
+		return initialDate.Format(dateTimeFormat), nil
 	case "y":
 		return TransferForYear(now, initialDate)
 	case "d":
@@ -90,11 +95,16 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 		return "", err
 	}
 
+	if (repeatDays == 1) || (initialDate.Before(now) || initialDate.Equal(now)) && (now.Format(dateTimeFormat) == initialDate.Format(dateTimeFormat)) {
+		return now.Format(dateTimeFormat), nil
+	}
+
 	for {
 		initialDate = initialDate.AddDate(0, 0, repeatDays)
 		if initialDate.After(now) {
 			break
 		}
+
 	}
 	return initialDate.Format(dateTimeFormat), nil
 
@@ -162,9 +172,7 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 				return "", err
 			}
 			realMonths = append(realMonths, month)
-
 		}
-
 	}
 	for {
 		initialDate = initialDate.AddDate(0, 0, 1)
@@ -174,5 +182,27 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 		}
 	}
 	return initialDate.Format(dateTimeFormat), nil
+}
 
+func CheckTaskDate(date string, repeat string) (string, error) {
+	now := time.Now()
+	// _, err := time.Parse(dateTimeFormat, date)
+	// if err != nil {
+	//
+	// }
+
+	if date == "" {
+		date = now.Format(dateTimeFormat)
+		return date, nil
+	}
+	_, err := time.Parse(dateTimeFormat, date)
+	if err != nil {
+		return "", errInvalidDate
+	}
+
+	if date <= now.Format(dateTimeFormat) && repeat == "" {
+		date = now.Format(dateTimeFormat)
+	}
+
+	return date, nil
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/RedrikShuhartRed/finalTODO/db"
 	"github.com/RedrikShuhartRed/finalTODO/handlers"
@@ -30,12 +31,17 @@ func main() {
 	defer db.CloseDB(dbs)
 	port := CreatePort()
 
-	webDir := "../web"
+	//webDir := "../web"
+	webDir, err := filepath.Abs("../web")
+	if err != nil {
+		log.Fatalf("Failed to get absolute path for web directory: %v", err)
+	}
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Static("/static", webDir) // Оставляем обработку статических файлов без изменений
 	r.GET("/api/nextdate", handlers.GetNextDate)
+	r.POST("/api/task", handlers.AddNewTask)
 	//http.Handle("/", http.FileServer(http.Dir(webDir)))
 	log.Printf("Starting server on port %s...\n", port)
 	err = r.Run(port)
