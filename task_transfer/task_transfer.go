@@ -26,8 +26,23 @@ func Contains(slice []int, value int) bool {
 	}
 	return false
 }
+func LastDayInMonths(days []int, initialDate time.Time) int {
+	t := time.Date(initialDate.Year(), initialDate.Month(), 32, 0, 0, 0, 0, time.UTC)
+	var daysInMonth int
+	for _, v := range days {
+		switch v {
+		case -1:
+			daysInMonth = 32 - t.Day()
+		case -2:
+			daysInMonth = 32 - t.Day() - 1
+		}
+	}
+	return daysInMonth
+}
+
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 	initialDate, err := time.Parse(dateTimeFormat, date)
+
 	if err != nil {
 		log.Printf("Error time.Parse date, %v:", err)
 		return "", errInvalidDate
@@ -120,7 +135,9 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 		return "", errLenRepeat
 	}
 	daysOfMounth := strings.Split(repeatSlice[1], ",")
-
+	if initialDate.Year() < now.Year() {
+		initialDate = now
+	}
 	var realDays []int
 	for _, days := range daysOfMounth {
 		day, err := strconv.Atoi(days)
@@ -129,10 +146,14 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 			return "", err
 		}
 		realDays = append(realDays, day)
+		if day == -1 || day == -2 {
+			day = LastDayInMonths(realDays, initialDate)
+			realDays = append(realDays, day)
+		}
 	}
 
 	var realMonths []int
-	if len(repeatSlice) == 3 {
+	if len(repeatSlice) > 2 {
 		monthsOfYear := strings.Split(repeatSlice[2], ",")
 		for _, months := range monthsOfYear {
 			month, err := strconv.Atoi(months)
@@ -147,8 +168,8 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 	}
 	for {
 		initialDate = initialDate.AddDate(0, 0, 1)
-		_, Month, Day := initialDate.Date()
-		if Contains(realDays, Day) && (len(realMonths) == 0) || Contains(realMonths, int(Month)) && initialDate.After(now) {
+		_, month, day := initialDate.Date()
+		if Contains(realDays, day) && (len(realMonths) == 0) || initialDate.After(now) && Contains(realMonths, int(month)) && Contains(realDays, day) {
 			break
 		}
 	}
