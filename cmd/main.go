@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/RedrikShuhartRed/finalTODO/db"
@@ -30,11 +29,12 @@ func main() {
 	defer db.CloseDB(dbs)
 	port := CreatePort()
 
-	webDir := "./web"
+	webDir := "../web"
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	http.Handle("/", http.FileServer(http.Dir(webDir)))
+	r.Static("/", webDir)
+	//http.Handle("/", http.FileServer(http.Dir(webDir)))
 	log.Printf("Starting server on port %s...\n", port)
 	err = r.Run(port)
 	//err := http.ListenAndServe(port, nil)
