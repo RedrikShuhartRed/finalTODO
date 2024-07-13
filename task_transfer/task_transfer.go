@@ -15,7 +15,6 @@ const (
 var (
 	errLenRepeat   = errors.New("еrror invalid repeat format")
 	errInvalidDate = errors.New("error invalid date format")
-	errRepeatEmpty = errors.New("error repeat rule is empty")
 )
 
 func Contains(slice []int, value int) bool {
@@ -49,7 +48,6 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 	}
 
 	initialDate, err := time.Parse(dateTimeFormat, date)
-
 	if err != nil {
 		log.Printf("Error time.Parse date, %v:", err)
 		return "", errInvalidDate
@@ -186,10 +184,6 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 
 func CheckTaskDate(date string, repeat string) (string, error) {
 	now := time.Now()
-	// _, err := time.Parse(dateTimeFormat, date)
-	// if err != nil {
-	//
-	// }
 
 	if date == "" {
 		date = now.Format(dateTimeFormat)

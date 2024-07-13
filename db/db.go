@@ -16,13 +16,13 @@ func CheckExistencesShedulerDB() (bool, string) {
 	dbFile := os.Getenv("TODO_DBFILE")
 	if dbFile == "" {
 
-		appPath, err := os.Executable()
+		appPath, err := os.Getwd()
 		if err != nil {
-			log.Fatalf("Error os.Executable, %v", err)
+			log.Fatalf("Error getting current working directory, %v", err)
 		}
 
-		dbFile = filepath.Join(filepath.Dir(appPath), "scheduler.db")
-		log.Printf("TODO_DBFILE environment variable not found, use %s", dbFile)
+		dbFile = filepath.Join(appPath, "scheduler.db")
+		log.Printf("TODO_DBFILE environment variable not found, using %s in project root directory", dbFile)
 	}
 	_, err := os.Stat(dbFile)
 
@@ -38,7 +38,7 @@ func CheckExistencesShedulerDB() (bool, string) {
 func ConnectDB() error {
 
 	install, dbFile := CheckExistencesShedulerDB()
-	dbFile = "../scheduler.db"
+
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
 		log.Printf("Error connect to DB, %v", err)
