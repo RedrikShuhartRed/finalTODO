@@ -1,4 +1,4 @@
-package tasktransfer_test
+package task_transfer
 
 import (
 	"errors"
@@ -26,7 +26,34 @@ func Contains(slice []int, value int) bool {
 	}
 	return false
 }
+func NextDate(now time.Time, date string, repeat string) (string, error) {
+	initialDate, err := time.Parse(dateTimeFormat, date)
+	if err != nil {
+		log.Printf("Error time.Parse date, %v:", err)
+		return "", errInvalidDate
+	}
 
+	if repeat == "" {
+		log.Printf("Error repeat rule is empty, %v:", errRepeatEmpty)
+		return "", errRepeatEmpty
+	}
+	repeatSlice := strings.Split(repeat, " ")
+
+	switch repeatSlice[0] {
+	case "y":
+		return TransferForYear(now, initialDate)
+	case "d":
+		return TransferForDay(now, initialDate, repeatSlice)
+	case "w":
+		return TransferForSpecifiedDayWeek(now, initialDate, repeatSlice)
+	case "m":
+		return TransferForSpecifiedDayMonth(now, initialDate, repeatSlice)
+	default:
+		log.Printf("error unsupported repeat format: %v", errLenRepeat)
+		return "", errLenRepeat
+	}
+
+}
 func TransferForYear(now time.Time, initialDate time.Time) (string, error) {
 	for {
 		initialDate = initialDate.AddDate(1, 0, 0)
@@ -126,34 +153,5 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 		}
 	}
 	return initialDate.Format(dateTimeFormat), nil
-
-}
-
-func NextDate(now time.Time, date string, repeat string) (string, error) {
-	initialDate, err := time.Parse(dateTimeFormat, date)
-	if err != nil {
-		log.Printf("Error time.Parse date, %v:", err)
-		return "", errInvalidDate
-	}
-
-	if repeat == "" {
-		log.Printf("Error repeat rule is empty, %v:", errRepeatEmpty)
-		return "", errRepeatEmpty
-	}
-	repeatSlice := strings.Split(repeat, " ")
-
-	switch repeatSlice[0] {
-	case "y":
-		return TransferForYear(now, initialDate)
-	case "d":
-		return TransferForDay(now, initialDate, repeatSlice)
-	case "w":
-		return TransferForSpecifiedDayWeek(now, initialDate, repeatSlice)
-	case "m":
-		return TransferForSpecifiedDayMonth(now, initialDate, repeatSlice)
-	default:
-		log.Printf("error unsupported repeat format: %v", errLenRepeat)
-		return "", errLenRepeat
-	}
 
 }

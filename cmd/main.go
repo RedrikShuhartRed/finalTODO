@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/RedrikShuhartRed/finalTODO/db"
+	"github.com/RedrikShuhartRed/finalTODO/handlers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,7 +34,8 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	r.Static("/", webDir)
+	r.Static("/static", webDir) // Оставляем обработку статических файлов без изменений
+	r.GET("/api/nextdate", handlers.GetNextDate)
 	//http.Handle("/", http.FileServer(http.Dir(webDir)))
 	log.Printf("Starting server on port %s...\n", port)
 	err = r.Run(port)
