@@ -2,12 +2,13 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/RedrikShuhartRed/finalTODO/db"
 	"github.com/RedrikShuhartRed/finalTODO/handlers"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 )
 
 func CreatePort() (port string) {
@@ -31,21 +32,21 @@ func main() {
 	defer db.CloseDB(dbs)
 	port := CreatePort()
 
-	//webDir := "../web"
 	webDir, err := filepath.Abs("../web")
 	if err != nil {
 		log.Fatalf("Failed to get absolute path for web directory: %v", err)
 	}
 
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
-	r.Static("/static", webDir) // Оставляем обработку статических файлов без изменений
-	r.GET("/api/nextdate", handlers.GetNextDate)
-	r.POST("/api/task", handlers.AddNewTask)
-	//http.Handle("/", http.FileServer(http.Dir(webDir)))
+	r := mux.NewRouter()
+	FileServer := http.FileServer(http.Dir(webDir))
+
+	r.HandleFunc("/api/nextdate", handlers.GetNextDate).Methods("GET")
+	r.HandleFunc("/api/task", handlers.AddNewTask).Methods("POST")
+	//r.HandleFunc("/api/task", handlers.GetAllTasks).Methods("GET")
+	r.PathPrefix("/").Handler(FileServer)
 	log.Printf("Starting server on port %s...\n", port)
-	err = r.Run(port)
-	//err := http.ListenAndServe(port, nil)
+
+	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Printf("Error starting Server, %v", err)
 	}

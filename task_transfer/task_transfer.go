@@ -93,10 +93,6 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 		return "", err
 	}
 
-	if (repeatDays == 1) || (initialDate.Before(now) || initialDate.Equal(now)) && (now.Format(dateTimeFormat) == initialDate.Format(dateTimeFormat)) {
-		return now.Format(dateTimeFormat), nil
-	}
-
 	for {
 		initialDate = initialDate.AddDate(0, 0, repeatDays)
 		if initialDate.After(now) {
@@ -175,6 +171,7 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 	for {
 		initialDate = initialDate.AddDate(0, 0, 1)
 		_, month, day := initialDate.Date()
+
 		if Contains(realDays, day) && (len(realMonths) == 0) || initialDate.After(now) && Contains(realMonths, int(month)) && Contains(realDays, day) {
 			break
 		}
@@ -189,13 +186,14 @@ func CheckTaskDate(date string, repeat string) (string, error) {
 		date = now.Format(dateTimeFormat)
 		return date, nil
 	}
+
 	_, err := time.Parse(dateTimeFormat, date)
 	if err != nil {
 		return "", errInvalidDate
 	}
 
 	if date <= now.Format(dateTimeFormat) && repeat == "" {
-		date = now.Format(dateTimeFormat)
+		return "", errLenRepeat
 	}
 
 	return date, nil
