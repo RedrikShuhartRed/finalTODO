@@ -22,21 +22,24 @@ var (
 	errEmptyTitle = errors.New("error Decode request body, Task title is empty")
 )
 
-func jsonError(message string) string {
-	return `{"error": "` + message + `"}`
+func jsonError(w http.ResponseWriter, message string) {
+	resp := map[string]string{"error": message}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(w).Encode(resp)
 }
 
 func GetNextDate(w http.ResponseWriter, r *http.Request) {
 
-	queryParams := r.URL.Query()
-	date := queryParams.Get("date")
-	now := queryParams.Get("now")
-	repeat := queryParams.Get("repeat")
+	date := r.URL.Query().Get("date")
+	now := r.URL.Query().Get("now")
+	repeat := r.URL.Query().Get("repeat")
 
 	nowTime, err := time.Parse(dateTimeFormat, now)
 	if err != nil {
 		log.Printf("error time.Parse now %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 
 	}
@@ -44,14 +47,16 @@ func GetNextDate(w http.ResponseWriter, r *http.Request) {
 	result, err := task_transfer.NextDate(nowTime, date, repeat)
 	if err != nil {
 		log.Printf("error time.Parse now %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(result)); err != nil {
 		log.Printf("error time.Parse now %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 }
@@ -60,42 +65,66 @@ func AddNewTask(w http.ResponseWriter, r *http.Request) {
 	dbs := db.GetDB()
 	var task models.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
-
+	now := time.Now()
 	if err != nil {
 		log.Printf("error Decode request body, %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if task.Title == "" {
+	if len(task.Title) == 0 {
 		log.Printf("error %v", errEmptyTitle)
-		http.Error(w, jsonError(errEmptyTitle.Error()), http.StatusBadRequest)
+		jsonError(w, errEmptyTitle.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	now := time.Now()
-	initialDate, err := task_transfer.NextDate(now, task.Date, task.Repeat)
-	if err != nil {
-		log.Printf("error NextDate, %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+	parseDate, err := time.Parse(dateTimeFormat, task.Date)
+	if err != nil && (len(task.Date) == 0) || task.Date == "today" {
+		task.Date = now.Format(dateTimeFormat)
+	} else if err != nil && len(task.Date) != 0 {
+		log.Printf("error %v", err)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
+	} else if err == nil && parseDate.Before(now) && len(task.Repeat) == 0 {
+		task.Date = now.Format(dateTimeFormat)
+	} else if err == nil && parseDate.Before(now) && len(task.Repeat) != 0 {
+		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			log.Printf("error %v", err)
+			jsonError(w, err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	} else {
+		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+		if err != nil {
+			log.Printf("error %v", err)
+			jsonError(w, err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
 
 	res, err := dbs.Exec(query.AddNewTask,
 		sql.Named("title", task.Title),
-		sql.Named("date", initialDate),
+		sql.Named("date", task.Date),
 		sql.Named("comment", task.Comment),
 		sql.Named("repeat", task.Repeat),
 	)
 	if err != nil {
 		log.Printf("error insert into scheduler, %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusInternalServerError)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	lastId, err := (res.LastInsertId())
 	if err != nil {
 		log.Printf("error insert into scheduler, %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusInternalServerError)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -106,7 +135,8 @@ func AddNewTask(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.Printf("error Encode response, %v", err)
-		http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+		jsonError(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
 		return
 
 	}
@@ -115,54 +145,62 @@ func AddNewTask(w http.ResponseWriter, r *http.Request) {
 func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	dbs := db.GetDB()
 	tasks := []models.Task{}
-	queryParams := r.URL.Query()
-	search := queryParams.Get("search")
-	limit := "20"
-	if len(search) == 0 {
-		rows, err := dbs.Query(`SELECT * FROM scheduler ORDER BY date LIMIT :limit`,
+	search := r.URL.Query().Get("search")
+	limit := 20
+	if search == "" {
+		limit = 50
+	}
+
+	var rows *sql.Rows
+	var err error
+	timeFormat := "02.01.2006"
+	if search == "" {
+		rows, err = dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit",
 			sql.Named("limit", limit))
 		if err != nil {
-			log.Printf("error read data from database,%v", err)
-			http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
+			log.Printf("error reading data from database: %v", err)
+			jsonError(w, "Error reading data from database")
 			return
 		}
-
-		for rows.Next() {
-			task := models.Task{}
-			err := rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-			if err != nil {
-				log.Printf("error rows data from database,%v", err)
-				http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
-				return
-			}
-			tasks = append(tasks, task)
-
-		}
-		if err := rows.Err(); err != nil {
-			log.Printf("error iterating over rows, %v", err)
-			http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
-			return
-		}
-
-		if err := rows.Close(); err != nil {
-			log.Printf("error closing rows, %v", err)
-			http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
-			return
-		}
-
-		if len(tasks) == 0 {
-			tasks = []models.Task{}
-		}
-
-		response := map[string][]models.Task{"tasks": tasks}
-
-		err = json.NewEncoder(w).Encode(response)
+	} else {
+		searchdate, err := time.Parse(timeFormat, search)
 		if err != nil {
-			log.Printf("error Encode response, %v", err)
-			http.Error(w, jsonError(err.Error()), http.StatusBadRequest)
-			return
+			rows, err = dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :title OR comment LIKE :comment ORDER BY date LIMIT :limit",
+				sql.Named("title", "%"+search+"%"),
+				sql.Named("comment", "%"+search+"%"),
+				sql.Named("limit", limit),
+			)
 
+		} else {
+			correctsearchdate := searchdate.Format("20060102")
+			rows, err = dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :date", sql.Named("date", correctsearchdate))
 		}
-		w.WriteHeader(http.StatusOK)
+		if err != nil {
+			log.Printf("error reading data from database: %v", err)
+			jsonError(w, "Error reading data from database")
+			return
+		}
+
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		task := models.Task{}
+		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+
+		tasks = append(tasks, task)
+	}
+	if err != nil {
+		log.Printf("error Scan data in Task: %v", err)
+		jsonError(w, "error Scan data in Task")
+		return
+	}
+
+	response := map[string][]models.Task{"tasks": tasks}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
 	}
 }

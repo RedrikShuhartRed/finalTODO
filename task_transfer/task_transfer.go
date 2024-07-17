@@ -41,23 +41,17 @@ func LastDayInMonths(days []int, initialDate time.Time) int {
 
 func NextDate(now time.Time, date string, repeat string) (string, error) {
 
-	date, err := CheckTaskDate(date, repeat)
-	if err != nil {
-		log.Printf("error check task date, %v", err)
-		return "", err
-	}
-
 	initialDate, err := time.Parse(dateTimeFormat, date)
 	if err != nil {
 		log.Printf("Error time.Parse date, %v:", err)
-		return "", errInvalidDate
+		return "", err
 	}
 
 	repeatSlice := strings.Split(repeat, " ")
 
 	switch repeatSlice[0] {
 	case "":
-		return initialDate.Format(dateTimeFormat), nil
+		return TransferEqualNill(now, initialDate)
 	case "y":
 		return TransferForYear(now, initialDate)
 	case "d":
@@ -92,14 +86,17 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 		log.Printf("error invalid repeatDays interval: %v", err)
 		return "", err
 	}
+	if initialDate.Year() == now.Year() && initialDate.Month() == now.Month() && initialDate.Day() == now.Day() {
+		return initialDate.Format(dateTimeFormat), nil
+	}
 
 	for {
 		initialDate = initialDate.AddDate(0, 0, repeatDays)
 		if initialDate.After(now) {
 			break
 		}
-
 	}
+
 	return initialDate.Format(dateTimeFormat), nil
 
 }
@@ -179,22 +176,9 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 	return initialDate.Format(dateTimeFormat), nil
 }
 
-func CheckTaskDate(date string, repeat string) (string, error) {
-	now := time.Now()
-
-	if date == "" {
-		date = now.Format(dateTimeFormat)
-		return date, nil
+func TransferEqualNill(now time.Time, initialDate time.Time) (string, error) {
+	if !initialDate.After(now) {
+		return "", nil
 	}
-
-	_, err := time.Parse(dateTimeFormat, date)
-	if err != nil {
-		return "", errInvalidDate
-	}
-
-	if date <= now.Format(dateTimeFormat) && repeat == "" {
-		return "", errLenRepeat
-	}
-
-	return date, nil
+	return initialDate.Format(dateTimeFormat), nil
 }

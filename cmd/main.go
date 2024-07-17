@@ -42,7 +42,7 @@ func main() {
 
 	r.HandleFunc("/api/nextdate", handlers.GetNextDate).Methods("GET")
 	r.HandleFunc("/api/task", handlers.AddNewTask).Methods("POST")
-	//r.HandleFunc("/api/task", handlers.GetAllTasks).Methods("GET")
+	r.HandleFunc("/api/tasks", handlers.GetAllTasks).Methods("GET")
 	r.PathPrefix("/").Handler(FileServer)
 	log.Printf("Starting server on port %s...\n", port)
 
