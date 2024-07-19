@@ -3,26 +3,17 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 
+	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
 	"github.com/RedrikShuhartRed/finalTODO/db"
 	"github.com/RedrikShuhartRed/finalTODO/handlers"
 	"github.com/gorilla/mux"
 )
 
-func CreatePort() (port string) {
-	port = os.Getenv("TODO_PORT")
-	if port == "" {
-		log.Printf("TODO_PORT environment variable not found, default port 7540 is used")
-		port = "7540"
-	}
-	port = ":" + port
-
-	return
-}
-
 func main() {
+	port := environment.LoadEnvPort()
+
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	err := db.ConnectDB()
 	if err != nil {
@@ -30,7 +21,6 @@ func main() {
 	}
 	dbs := db.GetDB()
 	defer db.CloseDB(dbs)
-	port := CreatePort()
 
 	webDir, err := filepath.Abs("../web")
 	if err != nil {
@@ -46,10 +36,12 @@ func main() {
 	r.HandleFunc("/api/task", handlers.GetTasksById).Methods("GET")
 	r.HandleFunc("/api/task", handlers.UpdateTask).Methods("PUT")
 	r.HandleFunc("/api/task/done", handlers.DoneTask).Methods("POST")
+	r.HandleFunc("/api/task", handlers.DeleteTask).Methods("DELETE")
+	//r.HandleFunc("/api/task", handlers.AuthorizationGetToken).Methods("POST")
 	r.PathPrefix("/").Handler(FileServer)
 	log.Printf("Starting server on port %s...\n", port)
 
-	err = http.ListenAndServe(port, r)
+	err = http.ListenAndServe(":"+port, r)
 	if err != nil {
 		log.Printf("Error starting Server, %v", err)
 	}

@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"path/filepath"
 
+	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
 	"github.com/RedrikShuhartRed/finalTODO/query"
 	_ "modernc.org/sqlite"
 )
@@ -13,17 +13,17 @@ import (
 var dbs *sql.DB
 
 func CheckExistencesShedulerDB() (bool, string) {
-	dbFile := os.Getenv("TODO_DBFILE")
-	if dbFile == "" {
+	dbFile := environment.LoadEnvPortDBFile()
+	// if dbFile == "" {
 
-		appPath, err := os.Getwd()
-		if err != nil {
-			log.Fatalf("Error getting current working directory, %v", err)
-		}
+	// 	appPath, err := os.Getwd()
+	// 	if err != nil {
+	// 		log.Fatalf("Error getting current working directory, %v", err)
+	// 	}
 
-		dbFile = filepath.Join(appPath, "scheduler.db")
-		log.Printf("TODO_DBFILE environment variable not found, using %s in project root directory", dbFile)
-	}
+	// 	dbFile = filepath.Join(appPath, "scheduler.db")
+	// 	log.Printf("TODO_DBFILE environment variable not found, using %s in project root directory", dbFile)
+	// }
 	_, err := os.Stat(dbFile)
 
 	var install bool

@@ -452,3 +452,50 @@ func DoneTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	dbs := db.GetDB()
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		log.Printf("error get id task: id == \"\"")
+		jsonError(w, "Не указан идентификатор")
+		return
+	}
+
+	// Проверка, что id является числом
+	_, err := strconv.Atoi(id)
+	if err != nil {
+		log.Printf("error get id task, id not int: %v", err)
+		jsonError(w, "Идентификатор должен быть числовым значением")
+		return
+	}
+
+	result, err := dbs.Exec(`DELETE FROM scheduler WHERE id = :id`, sql.Named("id", id))
+	if err != nil {
+		log.Printf("error delete task: %v", err)
+		jsonError(w, "невозможно удалить задачу")
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("error checking rows affected: %v", err)
+		jsonError(w, "Ошибка при удалении задачи")
+		return
+	}
+
+	if rowsAffected == 0 {
+		log.Printf("task not found for id: %s", id)
+		jsonError(w, "Задача не найдена")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(struct{}{}); err != nil {
+		log.Printf("Ошибка при отправке пустого JSON: %v", err)
+		jsonError(w, "Ошибка при отправке ответа")
+		return
+	}
+}
