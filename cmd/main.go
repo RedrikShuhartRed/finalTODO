@@ -6,16 +6,22 @@ import (
 	"path/filepath"
 
 	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
+	"github.com/RedrikShuhartRed/finalTODO/api"
 	"github.com/RedrikShuhartRed/finalTODO/db"
-	"github.com/RedrikShuhartRed/finalTODO/handlers"
 	"github.com/gorilla/mux"
+	"github.com/lpernett/godotenv"
 )
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Printf("error load .env: %s", err)
+	}
 	port := environment.LoadEnvPort()
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	err := db.ConnectDB()
+
+	err = db.ConnectDB()
 	if err != nil {
 		log.Printf("Error connect DB, %v", err)
 	}
@@ -29,15 +35,15 @@ func main() {
 
 	r := mux.NewRouter()
 	FileServer := http.FileServer(http.Dir(webDir))
-
-	r.HandleFunc("/api/nextdate", handlers.GetNextDate).Methods("GET")
-	r.HandleFunc("/api/task", handlers.AddNewTask).Methods("POST")
-	r.HandleFunc("/api/tasks", handlers.GetAllTasks).Methods("GET")
-	r.HandleFunc("/api/task", handlers.GetTasksById).Methods("GET")
-	r.HandleFunc("/api/task", handlers.UpdateTask).Methods("PUT")
-	r.HandleFunc("/api/task/done", handlers.DoneTask).Methods("POST")
-	r.HandleFunc("/api/task", handlers.DeleteTask).Methods("DELETE")
-	//r.HandleFunc("/api/task", handlers.AuthorizationGetToken).Methods("POST")
+	api.RegisterTasksStoreRoutes(r)
+	// r.HandleFunc("/api/nextdate", handlers.GetNextDate).Methods("GET")
+	// r.HandleFunc("/api/task", handlers.Auth(handlers.AddNewTask)).Methods("POST")
+	// r.HandleFunc("/api/tasks", handlers.Auth(handlers.GetAllTasks)).Methods("GET")
+	// r.HandleFunc("/api/task", handlers.Auth(handlers.GetTasksById)).Methods("GET")
+	// r.HandleFunc("/api/task", handlers.Auth(handlers.UpdateTask)).Methods("PUT")
+	// r.HandleFunc("/api/task/done", handlers.Auth(handlers.DoneTask)).Methods("POST")
+	// r.HandleFunc("/api/task", handlers.Auth(handlers.DeleteTask)).Methods("DELETE")
+	// r.HandleFunc("/api/signin", handlers.AuthorizationGetToken).Methods("POST")
 	r.PathPrefix("/").Handler(FileServer)
 	log.Printf("Starting server on port %s...\n", port)
 

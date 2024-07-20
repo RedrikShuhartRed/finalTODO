@@ -46,9 +46,7 @@ func NextDate(now time.Time, date string, repeat string) (string, error) {
 		log.Printf("Error time.Parse date, %v:", err)
 		return "", err
 	}
-	// if initialDate.After(time.Now()) && strings.HasPrefix(repeat, "d") {
-	// 	return initialDate.Format(dateTimeFormat), nil
-	// }
+
 	repeatSlice := strings.Split(repeat, " ")
 
 	switch repeatSlice[0] {
@@ -88,9 +86,7 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 		log.Printf("error invalid repeatDays interval: %v", err)
 		return "", err
 	}
-	// if initialDate.Year() == now.Year() && initialDate.Month() == now.Month() && initialDate.Day() == now.Day() {
-	// 	return initialDate.Format(dateTimeFormat), nil
-	// }
+
 	for {
 		initialDate = initialDate.AddDate(0, 0, repeatDays)
 		if initialDate.After(now) {
@@ -99,14 +95,6 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 	}
 
 	return initialDate.Format(dateTimeFormat), nil
-
-	// nextDate := initialDate
-	// nextDate = nextDate.AddDate(0, 0, repeatDays)
-	// for nextDate.Before(now) {
-	// 	nextDate = nextDate.AddDate(0, 0, repeatDays)
-
-	// // }
-	// return nextDate.Format(dateTimeFormat), nil
 }
 
 func TransferForSpecifiedDayWeek(now time.Time, initialDate time.Time, repeatSlice []string) (string, error) {

@@ -3,6 +3,7 @@ module github.com/RedrikShuhartRed/finalTODO
 go 1.22.4
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/mux v1.8.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lpernett/godotenv v0.0.0-20230527005122-0de1d4c5ef5e

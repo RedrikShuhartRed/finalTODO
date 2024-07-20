@@ -3,15 +3,10 @@ package environment
 import (
 	"log"
 	"os"
-
-	"github.com/lpernett/godotenv"
 )
 
 func LoadEnvPort() (port string) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("error load .env: %s", err)
-	}
+
 	port = os.Getenv("TODO_PORT")
 	if port == "" {
 		log.Printf("TODO_PORT environment variable not found, default is used")
@@ -21,10 +16,7 @@ func LoadEnvPort() (port string) {
 	return
 }
 func LoadEnvPortDBFile() (dbFile string) {
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("error load .env: %s", err)
-	}
+
 	dbFile = os.Getenv("TODO_DBFILE")
 	if dbFile == "" {
 		log.Printf("dbFile environment variable not found, default is used")
@@ -32,4 +24,20 @@ func LoadEnvPortDBFile() (dbFile string) {
 	}
 	log.Printf("environment variable is used: dbFile = %s", dbFile)
 	return dbFile
+}
+
+func LoadEnvPassword() (password string) {
+	password = os.Getenv("TODO_PASSWORD")
+
+	return
+}
+func LoadEnvPasswordSalt() (passwordSalt string) {
+	passwordSalt = os.Getenv("TODO_PASSWORDSALT")
+
+	return
+}
+func LoadEnvTokenSalt() (tokedSalt string) {
+	tokedSalt = os.Getenv("TODO_TOKENSALT")
+
+	return
 }
