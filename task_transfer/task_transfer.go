@@ -13,8 +13,7 @@ const (
 )
 
 var (
-	errLenRepeat   = errors.New("еrror invalid repeat format")
-	errInvalidDate = errors.New("error invalid date format")
+	errLenRepeat = errors.New("еrror invalid repeat format")
 )
 
 func Contains(slice []int, value int) bool {

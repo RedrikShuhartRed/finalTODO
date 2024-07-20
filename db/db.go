@@ -9,7 +9,6 @@ import (
 
 	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
 	"github.com/RedrikShuhartRed/finalTODO/models"
-	"github.com/RedrikShuhartRed/finalTODO/query"
 	_ "modernc.org/sqlite"
 )
 
@@ -40,13 +39,14 @@ func ConnectDB() error {
 
 	switch install {
 	case true:
-		_, err := db.Exec(query.CreateTable)
+		_, err := db.Exec(`CREATE TABLE scheduler (id INTEGER PRIMARY KEY AUTOINCREMENT, date CHAR(8), 
+	title VARCHAR(256) NOT NULL DEFAULT "", comment TEXT , repeat VARCHAR(128) DEFAULT "" )`)
 		if err != nil {
 			log.Printf("Error create table in DB, %v", err)
 			return err
 		}
 
-		_, err = db.Exec(query.CreateIndexDate)
+		_, err = db.Exec(`CREATE INDEX idx_date ON scheduler (date);`)
 		if err != nil {
 			log.Printf("Error create index for date in DB, %v", err)
 			return err
@@ -75,7 +75,7 @@ func CloseDB(db *sql.DB) error {
 
 func AddNewTask(task *models.Task) (int64, error) {
 	dbs := GetDB()
-	res, err := dbs.Exec(query.AddNewTask,
+	res, err := dbs.Exec(`INSERT INTO scheduler (title, date, comment, repeat) VALUES (:title, :date, :comment, :repeat)`,
 		sql.Named("title", task.Title),
 		sql.Named("date", task.Date),
 		sql.Named("comment", task.Comment),
