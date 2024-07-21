@@ -49,14 +49,3 @@ var RegisterTasksStoreRoutes = func(router *mux.Router, storage *db.Storage) {
 	router.HandleFunc("/api/task", handlers.Auth(DeleteTaskHandler(storage))).Methods("DELETE")
 	router.HandleFunc("/api/signin", handlers.AuthorizationGetToken).Methods("POST")
 }
-
-// var RegisterTasksStoreRoutes = func(router *mux.Router) {
-// 	router.HandleFunc("/api/nextdate", handlers.GetNextDate).Methods("GET")
-// 	router.HandleFunc("/api/task", handlers.AddNewTask).Methods("POST")
-// 	router.HandleFunc("/api/tasks", handlers.GetAllTasks).Methods("GET")
-// 	router.HandleFunc("/api/task", handlers.GetTasksById).Methods("GET")
-// 	router.HandleFunc("/api/task", handlers.UpdateTask).Methods("PUT")
-// 	router.HandleFunc("/api/task/done",handlers.DoneTask).Methods("POST")
-// 	router.HandleFunc("/api/task", handlers.DeleteTask).Methods("DELETE")
-// 	router.HandleFunc("/api/signin", handlers.AuthorizationGetToken).Methods("POST")
-// }
