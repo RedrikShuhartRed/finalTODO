@@ -28,3 +28,14 @@
 ```$ cd cmd```
 
 ```$ go run main.go```
+Переменные для запуска по умолчанию:
+```
+TODO_PORT=7540
+TODO_DBFILE=../cmd/scheduler.db
+TODO_PASSWORD=myPassword
+TODO_PASSWORDSALT = kl4509dafh43589whfh
+TODO_TOKENSALT = klajglk54adgagsd
+```
+Перейти в браузере по адресу:
+http://localhost:7540/login.html
+Ввести пароль myPassword
