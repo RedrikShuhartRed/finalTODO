@@ -26,4 +26,5 @@
 Из директории проекта ./cmd выполнить командe go run main.go:
 
 ```.../FinalTODO/cmd```
+
 ```$ go run main.go```
