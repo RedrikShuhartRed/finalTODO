@@ -24,5 +24,5 @@
 5. Создание Docker браза
 ## Локальный запуск
 Из директории проекта ./cmd выполнить команды go run main.go
-```.../FinalTODO/cmd
-$ go run main.go```
+```.../FinalTODO/cmd```
+```$ go run main.go```
