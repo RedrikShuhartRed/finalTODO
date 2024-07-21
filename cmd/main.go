@@ -19,13 +19,13 @@ func main() {
 		log.Printf("error load .env: %s", err)
 	}
 	port := environment.LoadEnvPort()
-	err = db.ConnectDB()
+
+	storage, err := db.ConnectDB()
 	if err != nil {
 		log.Printf("Error connect DB, %v", err)
 	}
-	dbs := db.GetDB()
-	defer db.CloseDB(dbs)
 
+	defer storage.CloseDB()
 	webDir, err := filepath.Abs("../web")
 	if err != nil {
 		log.Fatalf("Failed to get absolute path for web directory: %v", err)
@@ -33,7 +33,8 @@ func main() {
 
 	r := mux.NewRouter()
 	FileServer := http.FileServer(http.Dir(webDir))
-	api.RegisterTasksStoreRoutes(r)
+	api.RegisterTasksStoreRoutes(r, storage)
+
 	r.PathPrefix("/").Handler(FileServer)
 	log.Printf("Starting server on port %s...\n", port)
 

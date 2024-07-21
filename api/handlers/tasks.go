@@ -20,6 +20,7 @@ const (
 var (
 	errEmptyTitle = errors.New("error Decode request body, Task title is empty")
 	Jerr          middleware.JsonErr
+	//storage       = db.Storage{}
 )
 
 func GetNextDate(w http.ResponseWriter, r *http.Request) {
@@ -50,8 +51,8 @@ func GetNextDate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func AddNewTask(w http.ResponseWriter, r *http.Request) {
-	var task *models.Task
+func AddNewTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
+	var task models.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		log.Printf("error Decode request body, %v", err)
@@ -65,14 +66,15 @@ func AddNewTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task.Date, err = models.CheckDate(task)
+	task.Date, err = task.CheckDate()
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	lastId, err := db.AddNewTask(task)
+	lastId, err := storage.AddNewTask(task)
+	//lastId, err := db.AddNewTask(task)
 	if err != nil {
 		log.Printf("error insert into scheduler, %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -92,11 +94,12 @@ func AddNewTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetAllTasks(w http.ResponseWriter, r *http.Request) {
+func GetAllTasks(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 
 	search := r.URL.Query().Get("search")
 
-	tasks, err := db.GetAllTasks(search)
+	tasks, err := storage.GetAllTasks(search)
+	//tasks, err := db.GetAllTasks(search)
 	if err != nil {
 		log.Printf("error get all tasks: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -113,7 +116,7 @@ func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetTasksById(w http.ResponseWriter, r *http.Request) {
+func GetTasksById(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 	id := r.URL.Query().Get("id")
 
 	err := CheckId(id)
@@ -124,7 +127,8 @@ func GetTasksById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := db.GetTasksById(id)
+	task, err := storage.GetTasksById(id)
+	//task, err := db.GetTasksById(id)
 	if err != nil {
 		log.Printf("error get task from DB: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -142,7 +146,7 @@ func GetTasksById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
+func UpdateTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 	var task *models.Task
 	err := json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
@@ -164,7 +168,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task.Date, err = models.CheckDate(task)
+	task.Date, err = task.CheckDate()
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
@@ -172,7 +176,8 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rowsAffected, err := db.UpdateTask(task)
+	rowsAffected, err := storage.UpdateTask(task)
+	//rowsAffected, err := db.UpdateTask(task)
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -195,7 +200,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func DoneTask(w http.ResponseWriter, r *http.Request) {
+func DoneTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 
 	id := r.URL.Query().Get("id")
 
@@ -207,25 +212,27 @@ func DoneTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := db.GetTasksById(id)
+	task, err := storage.GetTasksById(id)
+	//task, err := db.GetTasksById(id)
 	if err != nil {
 		log.Printf("error get task from DB: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if len(task.Repeat) == 0 {
-		DeleteTask(w, r)
+		DeleteTask(w, r, storage)
 		return
 	}
 
-	task.Date, err = models.CheckDoneDate(task)
+	task.Date, err = task.CheckDoneDate()
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rowsAffected, err := db.UpdateTask(task)
+	rowsAffected, err := storage.UpdateTask(task)
+	//rowsAffected, err := db.UpdateTask(task)
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -248,7 +255,7 @@ func DoneTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteTask(w http.ResponseWriter, r *http.Request) {
+func DeleteTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 	id := r.URL.Query().Get("id")
 
 	err := CheckId(id)
@@ -258,7 +265,8 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rowsAffected, err := db.DeleteTask(id)
+	rowsAffected, err := storage.DeleteTask(id)
+	//rowsAffected, err := db.DeleteTask(id)
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)

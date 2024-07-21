@@ -20,7 +20,7 @@ const (
 	dateTimeFormat = "20060102"
 )
 
-func CheckDate(task *Task) (string, error) {
+func (task *Task) CheckDate() (string, error) {
 	now := time.Now()
 	parseDate, err := time.Parse(dateTimeFormat, task.Date)
 
@@ -53,7 +53,7 @@ func CheckDate(task *Task) (string, error) {
 	return task.Date, err
 
 }
-func CheckDoneDate(task *Task) (string, error) {
+func (task *Task) CheckDoneDate() (string, error) {
 	now := time.Now()
 	parseDate, err := time.Parse(dateTimeFormat, task.Date)
 	if err != nil && (len(task.Date) == 0) || task.Date == "today" {
