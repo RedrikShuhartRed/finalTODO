@@ -22,16 +22,16 @@
 3. Поиск задач при передаче параметра search
 4. Аутентификация
 5. Создание Docker образа
+   
 ## Локальный запуск
 Из директории проекта ./cmd выполнить команду go run main.go:
 ```
-$ cd cmd
-$ go run main.go
+$ go run cmd/main.go
 ```
 Переменные для запуска по умолчанию(в файле .env):
 ```
 TODO_PORT=7540
-TODO_DBFILE=../cmd/scheduler.db
+TODO_DBFILE=./scheduler.db
 TODO_PASSWORD=myPassword
 TODO_PASSWORDSALT = kl4509dafh43589whfh
 TODO_TOKENSALT = klajglk54adgagsd
@@ -50,7 +50,7 @@ go test ./tests
 Настроки переменных для тестирования в папке tests/settings, значения по умолчанию:
 ```
 var Port = 7540
-var DBFile = "../cmd/scheduler.db"
+var DBFile = "../scheduler.db"
 var FullNextDate = true
 var Search = true
 var Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJoYXNoUGFzcyI6IjJhMzcxMzI1YjI1ZDQ1MDJlNzgyYzk2MTJiZmE0YTQ2MDE2ZjQxMzJhNGNjODllM2MyYWJkOTEwYjkxMzM5MGEifQ.l7vnj9evbxf_3GzYhcJ67Mvt-Ob4YKf7oVqHfH5Jl2o"

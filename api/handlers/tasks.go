@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	check "github.com/RedrikShuhartRed/finalTODO/api/checkQueryParam"
 	"github.com/RedrikShuhartRed/finalTODO/api/middleware"
 	"github.com/RedrikShuhartRed/finalTODO/db"
 	"github.com/RedrikShuhartRed/finalTODO/models"
@@ -15,6 +16,7 @@ import (
 
 const (
 	dateTimeFormat = "20060102"
+	timeFormat     = "02.01.2006"
 )
 
 var (
@@ -65,7 +67,7 @@ func AddNewTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 		return
 	}
 
-	task.Date, err = task.CheckDate()
+	task.Date, err = check.CheckDate(task)
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
@@ -93,10 +95,11 @@ func AddNewTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 }
 
 func GetAllTasks(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
-
+	var tasks []models.Task
+	var err error
 	search := r.URL.Query().Get("search")
 
-	tasks, err := storage.GetAllTasks(search)
+	tasks, err = check.CheckSearch(search, storage)
 	if err != nil {
 		log.Printf("error get all tasks: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -116,7 +119,7 @@ func GetAllTasks(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 func GetTasksById(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 	id := r.URL.Query().Get("id")
 
-	err := CheckId(id)
+	err := check.CheckId(id)
 
 	if err != nil {
 		log.Printf("error get id task: %v", err)
@@ -150,7 +153,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = CheckId(task.ID)
+	err = check.CheckId(task.ID)
 
 	if err != nil {
 		log.Printf("error get id task: %v", err)
@@ -164,7 +167,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 		return
 	}
 
-	task.Date, err = task.CheckDate()
+	task.Date, err = check.CheckDate(*task)
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
@@ -172,7 +175,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 		return
 	}
 
-	rowsAffected, err := storage.UpdateTask(task)
+	rowsAffected, err := storage.UpdateTask(*task)
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -199,7 +202,7 @@ func DoneTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 
 	id := r.URL.Query().Get("id")
 
-	err := CheckId(id)
+	err := check.CheckId(id)
 	if err != nil {
 		log.Printf("error get id task: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
@@ -217,14 +220,14 @@ func DoneTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 		return
 	}
 
-	task.Date, err = task.CheckDoneDate()
+	task.Date, err = check.CheckDoneDate(*task)
 	if err != nil {
 		log.Printf("error %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rowsAffected, err := storage.UpdateTask(task)
+	rowsAffected, err := storage.UpdateTask(*task)
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -250,7 +253,7 @@ func DoneTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 func DeleteTask(w http.ResponseWriter, r *http.Request, storage *db.Storage) {
 	id := r.URL.Query().Get("id")
 
-	err := CheckId(id)
+	err := check.CheckId(id)
 	if err != nil {
 		log.Printf("error get id task: %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusBadRequest)

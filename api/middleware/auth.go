@@ -6,25 +6,25 @@ import (
 	"log"
 	"net/http"
 
-	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
+	"github.com/RedrikShuhartRed/finalTODO/config"
 	"github.com/golang-jwt/jwt"
 )
 
-func HashPassword(password string) string {
-	passwordBytes := []byte(environment.LoadEnvPassword())
-	passwordSaltBytes := []byte(environment.LoadEnvPasswordSalt())
+func HashPassword(password string, cfg *config.Config) string {
+	passwordBytes := []byte(cfg.Password)
+	passwordSaltBytes := []byte(cfg.PasswordSalt)
 	passwordBytes = append(passwordBytes, passwordSaltBytes...)
 	hashedPasswordBytes := sha256.Sum256(passwordBytes)
 	hashedPasswordBytesHex := hex.EncodeToString(hashedPasswordBytes[:])
 	return hashedPasswordBytesHex
 }
 
-func GenerateJWT(hashedPasswordBytesHex string) (string, error) {
+func GenerateJWT(hashedPasswordBytesHex string, cfg *config.Config) (string, error) {
 	claims := jwt.MapClaims{
 		"hashPass": hashedPasswordBytesHex,
 	}
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenSaltBytes := []byte(environment.LoadEnvTokenSalt())
+	tokenSaltBytes := []byte(cfg.TokenSalt)
 
 	signedToken, err := jwtToken.SignedString(tokenSaltBytes)
 	if err != nil {
@@ -34,7 +34,7 @@ func GenerateJWT(hashedPasswordBytesHex string) (string, error) {
 	return signedToken, nil
 }
 
-func GetHashFromCockie(r *http.Request) (string, error) {
+func GetHashFromCockie(r *http.Request, cfg *config.Config) (string, error) {
 	var token string
 	cookie, err := r.Cookie("token")
 	if err == nil {
@@ -42,7 +42,7 @@ func GetHashFromCockie(r *http.Request) (string, error) {
 	}
 
 	jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		return []byte(environment.LoadEnvTokenSalt()), nil
+		return []byte(cfg.TokenSalt), nil
 	})
 
 	if err != nil {

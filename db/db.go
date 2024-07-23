@@ -2,22 +2,27 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"log"
 	"os"
 	"time"
 
-	environment "github.com/RedrikShuhartRed/finalTODO/Environment"
-	"github.com/RedrikShuhartRed/finalTODO/models"
 	_ "modernc.org/sqlite"
+
+	"github.com/RedrikShuhartRed/finalTODO/config"
+	"github.com/RedrikShuhartRed/finalTODO/models"
+)
+
+const (
+	timeFormat = "02.01.2006"
+	limit      = 20
 )
 
 type Storage struct {
-	Dbs *sql.DB
+	db *sql.DB
 }
 
-func CheckExistencesShedulerDB() (bool, string) {
-	dbFile := environment.LoadEnvPortDBFile()
+func CheckExistencesShedulerDB(cfg *config.Config) (bool, string) {
+	dbFile := cfg.DbFile
 	_, err := os.Stat(dbFile)
 
 	var install bool
@@ -27,9 +32,8 @@ func CheckExistencesShedulerDB() (bool, string) {
 	return install, dbFile
 }
 
-func ConnectDB() (*Storage, error) {
-
-	install, dbFile := CheckExistencesShedulerDB()
+func ConnectDB(cfg *config.Config) (*Storage, error) {
+	install, dbFile := CheckExistencesShedulerDB(cfg)
 
 	db, err := sql.Open("sqlite", dbFile)
 	if err != nil {
@@ -57,19 +61,16 @@ func ConnectDB() (*Storage, error) {
 		log.Println("Database already exists.")
 	}
 
-	return &Storage{Dbs: db}, nil
+	return &Storage{db: db}, nil
 }
 
 func (s Storage) CloseDB() {
-	s.Dbs.Close()
+	s.db.Close()
 }
 
 func (s *Storage) AddNewTask(task models.Task) (int64, error) {
-	if s.Dbs == nil {
-		log.Printf("ERRRRADARTASFASFJKKFJ")
-		return 0, errors.New("DB connection is nil")
-	}
-	res, err := s.Dbs.Exec(`INSERT INTO scheduler (title, date, comment, repeat) VALUES (:title, :date, :comment, :repeat)`,
+
+	res, err := s.db.Exec(`INSERT INTO scheduler (title, date, comment, repeat) VALUES (:title, :date, :comment, :repeat)`,
 		sql.Named("title", task.Title),
 		sql.Named("date", task.Date),
 		sql.Named("comment", task.Comment),
@@ -80,7 +81,7 @@ func (s *Storage) AddNewTask(task models.Task) (int64, error) {
 		return 0, err
 
 	}
-	lastId, err := (res.LastInsertId())
+	lastId, err := res.LastInsertId()
 	if err != nil {
 		log.Printf("error insert into scheduler, %v", err)
 		return 0, err
@@ -88,46 +89,18 @@ func (s *Storage) AddNewTask(task models.Task) (int64, error) {
 	return lastId, nil
 }
 
-func (s Storage) GetAllTasks(search string) ([]models.Task, error) {
+func (s Storage) GetAllTasksWithoutSearch() ([]models.Task, error) {
 	tasks := []models.Task{}
-	limit := 20
-	if search == "" {
-		limit = 50
-	}
-	var rows *sql.Rows
-	var err error
-	timeFormat := "02.01.2006"
-
-	if search == "" {
-		rows, err = s.Dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit",
-			sql.Named("limit", limit))
-		if err != nil {
-			log.Printf("error reading data from database: %v", err)
-			return nil, err
-		}
-	} else {
-		searchdate, err := time.Parse(timeFormat, search)
-		if err != nil {
-			rows, err = s.Dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :title OR comment LIKE :comment ORDER BY date LIMIT :limit",
-				sql.Named("title", "%"+search+"%"),
-				sql.Named("comment", "%"+search+"%"),
-				sql.Named("limit", limit),
-			)
-
-		} else {
-			correctsearchdate := searchdate.Format("20060102")
-			rows, err = s.Dbs.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :date", sql.Named("date", correctsearchdate))
-		}
-		if err != nil {
-			log.Printf("error reading data from database: %v", err)
-			return nil, err
-		}
-
+	rows, err := s.db.Query("SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit",
+		sql.Named("limit", limit))
+	if err != nil {
+		log.Printf("error reading data from database: %v", err)
+		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		task := models.Task{}
+		var task models.Task
 		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 
 		tasks = append(tasks, task)
@@ -137,26 +110,92 @@ func (s Storage) GetAllTasks(search string) ([]models.Task, error) {
 
 		return nil, err
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (s Storage) GetAllTasksWithStringSearch(search string) ([]models.Task, error) {
+	tasks := []models.Task{}
+	rows, err := s.db.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :title OR comment LIKE :comment ORDER BY date LIMIT :limit",
+		sql.Named("title", "%"+search+"%"),
+		sql.Named("comment", "%"+search+"%"),
+		sql.Named("limit", limit),
+	)
+	if err != nil {
+		log.Printf("error reading data from database: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var task models.Task
+
+		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+
+		tasks = append(tasks, task)
+	}
+	if err != nil {
+		log.Printf("error Scan data in Task: %v", err)
+
+		return nil, err
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func (s Storage) GetAllTasksWithDateSearch(search string) ([]models.Task, error) {
+	tasks := []models.Task{}
+	searchdate, err := time.Parse(timeFormat, search)
+	if err != nil {
+		return nil, err
+	}
+	correctsearchdate := searchdate.Format("20060102")
+	rows, err := s.db.Query("SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :date", sql.Named("date", correctsearchdate))
+	if err != nil {
+		log.Printf("error reading data from database: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var task models.Task
+		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+
+		tasks = append(tasks, task)
+	}
+	if err != nil {
+		log.Printf("error Scan data in Task: %v", err)
+
+		return nil, err
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 	return tasks, nil
 }
 
 func (s Storage) GetTasksById(id string) (*models.Task, error) {
 	task := &models.Task{}
-	row := s.Dbs.QueryRow("SELECT * FROM scheduler WHERE id = :id;",
+	row := s.db.QueryRow("SELECT * FROM scheduler WHERE id = :id;",
 		sql.Named("id", id),
 	)
 	err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
 		return nil, err
 	}
 	return task, nil
 }
 
-func (s Storage) UpdateTask(task *models.Task) (int64, error) {
-	result, err := s.Dbs.Exec(`UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id`,
+func (s Storage) UpdateTask(task models.Task) (int64, error) {
+	result, err := s.db.Exec(`UPDATE scheduler SET date = :date, title = :title, comment = :comment, repeat = :repeat WHERE id = :id`,
 		sql.Named("title", task.Title),
 		sql.Named("date", task.Date),
 		sql.Named("comment", task.Comment),
@@ -170,15 +209,17 @@ func (s Storage) UpdateTask(task *models.Task) (int64, error) {
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		log.Printf("error getting rows affected: %v", err)
+		return 0, err
 	}
 	if rowsAffected == 0 {
 		log.Printf("no rows affected: %v", err)
+		return 0, err
 	}
 	return rowsAffected, nil
 }
 
 func (s Storage) DeleteTask(id string) (int64, error) {
-	result, err := s.Dbs.Exec(`DELETE FROM scheduler WHERE id = :id`,
+	result, err := s.db.Exec(`DELETE FROM scheduler WHERE id = :id`,
 		sql.Named("id", id))
 	if err != nil {
 		log.Printf("error delete task")
@@ -189,9 +230,11 @@ func (s Storage) DeleteTask(id string) (int64, error) {
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		log.Printf("error checking rows affected: %v", err)
+		return 0, err
 	}
 	if rowsAffected == 0 {
 		log.Printf("task not found for id: %v", id)
+		return 0, err
 	}
 	return rowsAffected, err
 }
