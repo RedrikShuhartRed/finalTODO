@@ -102,14 +102,13 @@ func (s Storage) GetAllTasksWithoutSearch() ([]models.Task, error) {
 	for rows.Next() {
 		var task models.Task
 		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-
+		if err != nil {
+			log.Printf("error Scan data in Task: %v", err)
+			return nil, err
+		}
 		tasks = append(tasks, task)
 	}
-	if err != nil {
-		log.Printf("error Scan data in Task: %v", err)
 
-		return nil, err
-	}
 	err = rows.Err()
 	if err != nil {
 		return nil, err
@@ -132,16 +131,14 @@ func (s Storage) GetAllTasksWithStringSearch(search string) ([]models.Task, erro
 
 	for rows.Next() {
 		var task models.Task
-
 		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-
+		if err != nil {
+			log.Printf("error Scan data in Task: %v", err)
+			return nil, err
+		}
 		tasks = append(tasks, task)
 	}
-	if err != nil {
-		log.Printf("error Scan data in Task: %v", err)
 
-		return nil, err
-	}
 	err = rows.Err()
 	if err != nil {
 		return nil, err
@@ -164,17 +161,15 @@ func (s Storage) GetAllTasksWithDateSearch(search string) ([]models.Task, error)
 	defer rows.Close()
 
 	for rows.Next() {
-
 		var task models.Task
 		err = rows.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
-
+		if err != nil {
+			log.Printf("error Scan data in Task: %v", err)
+			return nil, err
+		}
 		tasks = append(tasks, task)
 	}
-	if err != nil {
-		log.Printf("error Scan data in Task: %v", err)
 
-		return nil, err
-	}
 	err = rows.Err()
 	if err != nil {
 		return nil, err
@@ -191,6 +186,7 @@ func (s Storage) GetTasksById(id string) (*models.Task, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return task, nil
 }
 

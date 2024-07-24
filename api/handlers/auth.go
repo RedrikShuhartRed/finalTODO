@@ -38,7 +38,12 @@ func (h *Handler) AuthorizationGetToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	res, _ := json.Marshal(&map[string]string{"token": signedToken})
+	res, err := json.Marshal(&map[string]string{"token": signedToken})
+	if err != nil {
+		log.Printf("error Marshal response, %v", err)
+		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	_, err = w.Write(res)
 	if err != nil {
 		log.Printf("error during writing data to response writer %v", err)
