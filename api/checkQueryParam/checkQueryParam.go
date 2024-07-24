@@ -52,55 +52,75 @@ func CheckDate(task models.Task) (string, error) {
 	now := time.Now()
 	parseDate, err := time.Parse(dateTimeFormat, task.Date)
 
-	if err != nil && (len(task.Date) == 0) || task.Date == "today" {
-		task.Date = now.Format(dateTimeFormat)
-		return task.Date, nil
-	} else if err != nil && len(task.Date) != 0 {
-		log.Printf("error %v", err)
-
-	} else if err == nil && parseDate.Before(now) && len(task.Repeat) == 0 {
-		task.Date = now.Format(dateTimeFormat)
-
-	} else if parseDate.Year() == now.Year() && parseDate.Month() == now.Month() && parseDate.Day() == now.Day() {
-		task.Date = now.Format(dateTimeFormat)
-
-	} else if parseDate.After(time.Now()) && strings.HasPrefix(task.Repeat, "d") {
-		task.Date = parseDate.Format(dateTimeFormat)
-
-	} else if err == nil && parseDate.Before(now) && len(task.Repeat) != 0 {
-		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
-		if err != nil {
-			log.Printf("error %v", err)
+	if err == nil {
+		if parseDate.Before(now) && len(task.Repeat) == 0 {
+			task.Date = now.Format(dateTimeFormat)
+			return task.Date, nil
 		}
-	} else {
-		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
-		if err != nil {
-			log.Printf("error %v", err)
+		if parseDate.Year() == now.Year() && parseDate.Month() == now.Month() && parseDate.Day() == now.Day() {
+			task.Date = now.Format(dateTimeFormat)
+			return task.Date, nil
+		}
+		if parseDate.Before(now) && len(task.Repeat) != 0 {
+			task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+			if err != nil {
+				return "", err
+			}
+			return task.Date, nil
+		}
+		if parseDate.After(time.Now()) && strings.HasPrefix(task.Repeat, "d") {
+			task.Date = parseDate.Format(dateTimeFormat)
+			return task.Date, nil
 		}
 	}
-	return task.Date, err
+
+	if err != nil {
+		if (len(task.Date) == 0) || task.Date == "today" {
+			task.Date = now.Format(dateTimeFormat)
+			return task.Date, nil
+		}
+		return "", err
+	}
+
+	task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+	if err != nil {
+		return "", err
+	}
+
+	return task.Date, nil
 
 }
+
 func CheckDoneDate(task models.Task) (string, error) {
 	now := time.Now()
 	parseDate, err := time.Parse(dateTimeFormat, task.Date)
-	if err != nil && (len(task.Date) == 0) || task.Date == "today" {
-		task.Date = now.Format(dateTimeFormat)
-	} else if err != nil && len(task.Date) != 0 {
-		log.Printf("error %v", err)
-	} else if err == nil && parseDate.Before(now) && len(task.Repeat) == 0 {
-		task.Date = now.Format(dateTimeFormat)
-	} else if err == nil && parseDate.Before(now) && len(task.Repeat) != 0 {
-		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
-		if err != nil {
-			log.Printf("error %v", err)
-		}
-	} else {
-		task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
-		if err != nil {
-			log.Printf("error %v", err)
 
+	if err == nil {
+		if parseDate.Before(now) && len(task.Repeat) == 0 {
+			task.Date = now.Format(dateTimeFormat)
+			return task.Date, nil
+		}
+		if parseDate.Before(now) && len(task.Repeat) != 0 {
+			task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+			if err != nil {
+				return "", err
+			}
+			return task.Date, nil
 		}
 	}
-	return task.Date, err
+
+	if err != nil {
+		if (len(task.Date) == 0) || task.Date == "today" {
+			task.Date = now.Format(dateTimeFormat)
+			return task.Date, nil
+		}
+		return "", err
+	}
+
+	task.Date, err = task_transfer.NextDate(now, task.Date, task.Repeat)
+	if err != nil {
+		return "", err
+	}
+
+	return task.Date, nil
 }

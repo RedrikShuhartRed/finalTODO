@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"log"
 	"os"
 )
 
@@ -13,31 +13,36 @@ type Config struct {
 	TokenSalt    string
 }
 
-func NewConfig() (*Config, error) {
+func NewConfig() *Config {
 
 	port := os.Getenv("TODO_PORT")
 	if port == "" {
-		return nil, errors.New("TODO_PORT environment variable required but not set")
+		port = "7540"
+		log.Printf("TODO_PORT environment variable required but not set, used default")
 	}
 
 	dbfile := os.Getenv("TODO_DBFILE")
 	if dbfile == "" {
-		return nil, errors.New("TODO_DBFILE environment variable required but not set")
+		dbfile = "./scheduler.db"
+		log.Printf("TODO_DBFILE environment variable required but not set, used default")
 	}
 
 	password := os.Getenv("TODO_PASSWORD")
 	if password == "" {
-		return nil, errors.New("TODO_PASSWORD environment variable required but not set")
+		password = "myPassword"
+		log.Printf("TODO_PASSWORD environment variable required but not set, used default")
 	}
 
 	passwordsalt := os.Getenv("TODO_PASSWORDSALT")
 	if passwordsalt == "" {
-		return nil, errors.New("TODO_PASSWORDSALT environment variable required but not set")
+		passwordsalt = "kl4509dafh43589whfh"
+		log.Printf("TODO_PASSWORDSALT environment variable required but not se, used defaultt")
 	}
 
 	tokensalt := os.Getenv("TODO_TOKENSALT")
 	if tokensalt == "" {
-		return nil, errors.New("TODO_TOKENSALT environment variable required but not set")
+		tokensalt = "klajglk54adgagsd"
+		log.Printf("TODO_TOKENSALT environment variable required but not set, used default")
 	}
 
 	return &Config{
@@ -46,5 +51,5 @@ func NewConfig() (*Config, error) {
 		Password:     password,
 		PasswordSalt: passwordsalt,
 		TokenSalt:    tokensalt,
-	}, nil
+	}
 }

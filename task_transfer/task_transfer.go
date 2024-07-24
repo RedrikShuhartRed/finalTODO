@@ -9,7 +9,13 @@ import (
 )
 
 const (
-	dateTimeFormat = "20060102"
+	dateTimeFormat                  = "20060102"
+	minRepeatDays                   = 1
+	maxRepeatDays                   = 400
+	maxDaysInMounth                 = 31
+	minDaysInMounth                 = -2
+	lastDayInMounthArgument         = -1
+	PenultimatetDayInMounthArgument = -2
 )
 
 var (
@@ -81,7 +87,7 @@ func TransferForDay(now time.Time, initialDate time.Time, repeatSlice []string) 
 		return "", errLenRepeat
 	}
 	repeatDays, err := strconv.Atoi(repeatSlice[1])
-	if err != nil || repeatDays < 1 || repeatDays > 400 {
+	if err != nil || repeatDays < minRepeatDays || repeatDays > maxRepeatDays {
 		log.Printf("error invalid repeatDays interval: %v", err)
 		return "", err
 	}
@@ -137,12 +143,12 @@ func TransferForSpecifiedDayMonth(now time.Time, initialDate time.Time, repeatSl
 	var realDays []int
 	for _, days := range daysOfMounth {
 		day, err := strconv.Atoi(days)
-		if day > 31 || day < -2 || err != nil {
+		if day > maxDaysInMounth || day < minDaysInMounth || err != nil {
 			log.Printf("error invalid day format for months days repeat %v", err)
 			return "", err
 		}
 		realDays = append(realDays, day)
-		if day == -1 || day == -2 {
+		if day == lastDayInMounthArgument || day == PenultimatetDayInMounthArgument {
 			day = LastDayInMonths(realDays, initialDate)
 			realDays = append(realDays, day)
 		}

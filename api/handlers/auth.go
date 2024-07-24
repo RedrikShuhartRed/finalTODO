@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/RedrikShuhartRed/finalTODO/api/middleware"
-	"github.com/RedrikShuhartRed/finalTODO/config"
 )
 
 var (
@@ -15,7 +14,7 @@ var (
 	errTokenPassword = errors.New("error: token password hash doesn't match")
 )
 
-func AuthorizationGetToken(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
+func (h *Handler) AuthorizationGetToken(w http.ResponseWriter, r *http.Request) {
 	password := map[string]string{}
 
 	err := json.NewDecoder(r.Body).Decode(&password)
@@ -25,14 +24,14 @@ func AuthorizationGetToken(w http.ResponseWriter, r *http.Request, cfg *config.C
 		return
 	}
 
-	if password["password"] != cfg.Password {
+	if password["password"] != h.cfg.Password {
 		log.Printf("error: wrong password %v", errWrongPassword)
 		Jerr.JsonError(w, errWrongPassword.Error(), http.StatusUnauthorized)
 
 		return
 	}
-	hashedPasswordBytesHex := middleware.HashPassword(password["password"], cfg)
-	signedToken, err := middleware.GenerateJWT(hashedPasswordBytesHex, cfg)
+	hashedPasswordBytesHex := middleware.HashPassword(password["password"], h.cfg)
+	signedToken, err := middleware.GenerateJWT(hashedPasswordBytesHex, h.cfg)
 	if err != nil {
 		log.Printf("error , %v", err)
 		Jerr.JsonError(w, err.Error(), http.StatusInternalServerError)
@@ -49,18 +48,18 @@ func AuthorizationGetToken(w http.ResponseWriter, r *http.Request, cfg *config.C
 
 }
 
-func Auth(next http.HandlerFunc, cfg *config.Config) http.HandlerFunc {
+func (h *Handler) Auth(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(cfg.Password) > 0 {
+		if len(h.cfg.Password) > 0 {
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-			hashPass, err := middleware.GetHashFromCockie(r, cfg)
+			hashPass, err := middleware.GetHashFromCockie(r, h.cfg)
 			if err != nil {
 				log.Printf("error , %v", err)
 				Jerr.JsonError(w, err.Error(), http.StatusUnauthorized)
 			}
 
-			hashedPasswordBytesHex := middleware.HashPassword(cfg.Password, cfg)
+			hashedPasswordBytesHex := middleware.HashPassword(h.cfg.Password, h.cfg)
 
 			if hashPass != hashedPasswordBytesHex {
 				log.Printf("error, %v", errTokenPassword)

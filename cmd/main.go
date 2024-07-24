@@ -20,10 +20,8 @@ func main() {
 	if err != nil {
 		log.Printf("error load .env: %s", err)
 	}
-	cfg, err := config.NewConfig()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %s", err)
-	}
+	cfg := config.NewConfig()
+
 	log.Printf("Configuration loaded: %+v\n", cfg)
 	port := cfg.Port
 
